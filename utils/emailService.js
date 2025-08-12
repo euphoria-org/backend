@@ -9,7 +9,7 @@ const createTransporter = () => {
   return nodemailer.createTransport({
     host: process.env.NODEMAIL_HOST,
     port: process.env.NODEMAIL_PORT,
-    secure: false, 
+    secure: false,
     auth: {
       user: process.env.NODEMAIL_EMAIL,
       pass: process.env.NODEMAIL_APP_PASSWORD,
