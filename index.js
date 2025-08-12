@@ -83,16 +83,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     passport.authenticate("google", { failureRedirect: "/auth/failure" }),
     (req, res) => {
       try {
-        // Generate JWT token
         const jwt = require("jsonwebtoken");
         const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
           expiresIn: process.env.JWT_EXPIRES_IN || "7d",
         });
-
-        // Determine redirect URL based on referrer or query parameter
         let redirectUrl = process.env.FRONTEND_URL || "http://localhost:5175";
-
-        // Check if request came from admin panel
         const referrer = req.get("Referrer") || req.get("Origin");
         const returnTo = req.query.state; // Can be used to pass redirect info
 
@@ -169,9 +164,6 @@ app.use((req, res) => {
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-  console.log(
-    `Google OAuth redirect URI: http://localhost:${port}/auth/google/callback`
-  );
 });
 
 module.exports = app;

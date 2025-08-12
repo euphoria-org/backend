@@ -30,13 +30,13 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          // Check if user already exists
+          
           let user = await UserModel.findOne({
             $or: [{ auth0Id: profile.id }, { email: profile.emails[0].value }],
           });
 
           if (user) {
-            // User exists, update Google ID if not set
+
             if (!user.auth0Id) {
               user.auth0Id = profile.id;
               user.authProvider = "google";
@@ -54,6 +54,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             email: profile.emails[0].value,
             password: temporaryPassword, // This will be hashed by the pre-save hook
             authProvider: "google",
+            isEmailVerified: true, // Auto-verify Google users
           });
 
           await user.save();
@@ -78,7 +79,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       }
     )
   );
-  console.log("Google OAuth strategy initialized");
 } else {
   console.warn(
     "Google OAuth credentials not found. Google authentication will be disabled."

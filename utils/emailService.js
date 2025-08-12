@@ -36,7 +36,6 @@ exports.sendWelcomeEmailWithCredentials = async (email, name, password) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("Welcome email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error("Error sending welcome email:", error);
@@ -62,7 +61,6 @@ exports.sendPasswordResetEmail = async (email, name, resetToken) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("Password reset email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error("Error sending password reset email:", error);
@@ -88,7 +86,6 @@ exports.sendVerificationEmail = async (email, name, verificationToken) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("Verification email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error("Error sending verification email:", error);
@@ -144,7 +141,6 @@ exports.sendNotificationEmail = async (
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("Notification email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error("Error sending notification email:", error);
@@ -196,7 +192,6 @@ exports.sendPasswordResetEmail = async (email, name, resetToken) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("Password reset email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error("Error sending password reset email:", error);

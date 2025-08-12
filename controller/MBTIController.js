@@ -1,4 +1,5 @@
 const MBTIModel = require("../models/MBTIModel");
+const MBTIResult = require("../models/MBTIResult");
 
 exports.addQuestion = async (req, res) => {
   try {
@@ -283,7 +284,6 @@ exports.updateQuestion = async (req, res) => {
 };
 
 // Additional methods for user MBTI test functionality
-const MBTIResult = require("../models/MBTIResult");
 
 // Submit MBTI test responses and calculate result
 exports.submitTest = async (req, res) => {
@@ -315,15 +315,16 @@ exports.submitTest = async (req, res) => {
       const question = questions[index];
       const { answer } = response; // 1-5 scale (1=strongly disagree, 5=strongly agree)
 
-      // Validate answer range
-      if (answer < 1 || answer > 5) {
+      // Convert answer to number and validate range
+      const numericAnswer = parseInt(answer);
+      if (isNaN(numericAnswer) || numericAnswer < 1 || numericAnswer > 5) {
         throw new Error(
           `Answer for question ${index + 1} must be between 1 and 5`
         );
       }
 
       // Convert 1-5 scale to -2 to +2 scale
-      let score = answer - 3;
+      let score = numericAnswer - 3;
 
       // Apply score direction
       if (question.scoreDirection === "-") {
@@ -590,13 +591,7 @@ async function logAdminAction(
     });
     await adminLog.save();
 
-    // Also log to console for immediate monitoring
     const timestamp = new Date().toISOString();
-    console.log(
-      `[ADMIN ACTION] ${timestamp} - Admin ${adminId} performed ${action} on ${resourceType}${
-        resourceId ? ` (ID: ${resourceId})` : ""
-      }${details ? ` - ${details}` : ""}`
-    );
   } catch (error) {
     console.error("Error logging admin action:", error);
   }

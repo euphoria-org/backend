@@ -33,11 +33,6 @@ const logAdminAction = async (
     await adminLog.save();
 
     const timestamp = new Date().toISOString();
-    console.log(
-      `[ADMIN ACTION] ${timestamp} - Admin ${adminId} performed ${action} on ${resourceType}${
-        resourceId ? ` (ID: ${resourceId})` : ""
-      }${details ? ` - ${details}` : ""}`
-    );
   } catch (error) {
     console.error("Error logging admin action:", error);
   }
