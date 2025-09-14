@@ -22,9 +22,9 @@ exports.sendWelcomeEmailWithCredentials = async (email, name, password) => {
     const transporter = createTransporter();
 
     const mailOptions = {
-      from: `"MBTI Personality Platform" <${process.env.NODEMAIL_EMAIL}>`,
+      from: `"Euphoria" <${process.env.NODEMAIL_EMAIL}>`,
       to: email,
-      subject: "Welcome to MBTI Platform - Account Created Successfully",
+      subject: "Welcome to Euphoria - Account Created Successfully",
       html: getWelcomeTemplate(name, email, password),
 
       headers: {
@@ -49,9 +49,9 @@ exports.sendPasswordResetEmail = async (email, name, resetToken) => {
     const transporter = createTransporter();
 
     const mailOptions = {
-      from: `"MBTI Personality Platform" <${process.env.NODEMAIL_EMAIL}>`,
+      from: `"Euphoria" <${process.env.NODEMAIL_EMAIL}>`,
       to: email,
-      subject: "Password Reset Request - MBTI Platform",
+      subject: "Password Reset Request - Euphoria",
       html: getPasswordResetTemplate(name, resetToken),
       headers: {
         "X-Priority": "2",
@@ -75,9 +75,9 @@ exports.sendVerificationEmail = async (email, name, verificationToken) => {
     const transporter = createTransporter();
 
     const mailOptions = {
-      from: `"MBTI Personality Platform" <${process.env.NODEMAIL_EMAIL}>`,
+      from: `"Euphoria" <${process.env.NODEMAIL_EMAIL}>`,
       to: email,
-      subject: "Email Verification Required - MBTI Platform",
+      subject: "Email Verification Required - Euphoria",
       html: getVerificationTemplate(name, verificationToken),
       headers: {
         "X-Priority": "2",

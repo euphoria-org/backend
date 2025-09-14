@@ -402,7 +402,7 @@ exports.getBaseTemplate = (title, content, primaryColor = "#35063E") => {
 exports.getWelcomeTemplate = (name, email, password) => {
   const content = `
     <div class="header">
-        <h1>Welcome to MBTI Platform</h1>
+        <h1>Welcome to Euphoria</h1>
         <p>Your personality discovery journey starts here</p>
     </div>
     
@@ -410,7 +410,7 @@ exports.getWelcomeTemplate = (name, email, password) => {
         <div class="greeting">Hello ${name},</div>
         
         <div class="message">
-            Thank you for joining our MBTI Personality Test Platform. Your account has been successfully created using Google authentication, and we're excited to help you discover your unique personality type.
+            Thank you for joining our Euphoria Personality Test Platform. Your account has been successfully created using Google authentication, and we're excited to help you discover your unique personality type.
         </div>
         
         <div class="info-box">
@@ -479,7 +479,7 @@ exports.getWelcomeTemplate = (name, email, password) => {
     </div>
   `;
 
-  return exports.getBaseTemplate("Welcome to MBTI Platform", content);
+  return exports.getBaseTemplate("Welcome to Euphoria", content);
 };
 
 // Professional password reset email template
@@ -498,7 +498,7 @@ exports.getPasswordResetTemplate = (name, resetToken) => {
         <div class="greeting">Hello ${name},</div>
         
         <div class="message">
-            We received a request to reset your password for your MBTI Platform account. If you made this request, please click the button below to create a new password.
+            We received a request to reset your password for your Euphoria account. If you made this request, please click the button below to create a new password.
         </div>
         
         <div class="button-center">
@@ -543,7 +543,7 @@ exports.getPasswordResetTemplate = (name, resetToken) => {
     </div>
   `;
 
-  return exports.getBaseTemplate("Password Reset - MBTI Platform", content);
+  return exports.getBaseTemplate("Password Reset - Euphoria", content);
 };
 
 // Professional account verification email template
@@ -562,7 +562,7 @@ exports.getVerificationTemplate = (name, verificationToken) => {
         <div class="greeting">Welcome ${name},</div>
         
         <div class="message">
-            Thank you for creating your MBTI Platform account. To complete your registration and ensure account security, please verify your email address by clicking the button below.
+            Thank you for creating your Euphoria account. To complete your registration and ensure account security, please verify your email address by clicking the button below.
         </div>
         
         <div class="button-center">
@@ -599,5 +599,5 @@ exports.getVerificationTemplate = (name, verificationToken) => {
     </div>
   `;
 
-  return exports.getBaseTemplate("Verify Your Email - MBTI Platform", content);
+  return exports.getBaseTemplate("Verify Your Email - Euphoria", content);
 };

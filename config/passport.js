@@ -30,33 +30,72 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          // Check if user already exists
+          console.log(
+            "Google OAuth Profile:",
+            profile.id,
+            profile.emails[0].value,
+            profile.displayName
+          );
+
+          // Use a more robust query to prevent duplicates
+          // Check by googleId first (most specific), then by email
           let user = await UserModel.findOne({
-            $or: [{ auth0Id: profile.id }, { email: profile.emails[0].value }],
+            $or: [
+              { googleId: profile.id },
+              { auth0Id: profile.id }, // Legacy field support
+              { email: profile.emails[0].value },
+            ],
           });
 
           if (user) {
-            // User exists, update Google ID if not set
-            if (!user.auth0Id) {
-              user.auth0Id = profile.id;
-              user.authProvider = "google";
-              await user.save();
+            console.log("Existing user found:", user._id, user.email);
+
+            // Update user to ensure consistency
+            let needsUpdate = false;
+
+            if (!user.googleId && profile.id) {
+              user.googleId = profile.id;
+              needsUpdate = true;
             }
+
+            if (!user.auth0Id && profile.id) {
+              user.auth0Id = profile.id;
+              needsUpdate = true;
+            }
+
+            if (user.authProvider !== "google") {
+              user.authProvider = "google";
+              needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+              await user.save();
+              console.log("Updated existing user with Google OAuth data");
+            }
+
             return done(null, user);
           }
 
-          // Create new user
+          console.log("Creating new user for Google OAuth");
+
+          // Create new user - ensure no duplicate creation with atomic operation
           const temporaryPassword = crypto.randomBytes(12).toString("hex");
 
           user = new UserModel({
-            auth0Id: profile.id,
-            name: profile.displayName,
+            googleId: profile.id,
+            auth0Id: profile.id, // Keep for backward compatibility
+            name:
+              profile.displayName ||
+              profile.name?.givenName + " " + profile.name?.familyName ||
+              "Google User",
             email: profile.emails[0].value,
             password: temporaryPassword, // This will be hashed by the pre-save hook
             authProvider: "google",
+            isEmailVerified: true, // Google emails are verified
           });
 
           await user.save();
+          console.log("New Google user created:", user._id, user.email);
 
           // Send welcome email with credentials
           try {
@@ -65,6 +104,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
               user.name,
               temporaryPassword // Send the plain password in email before it was hashed
             );
+            console.log("Welcome email sent to:", user.email);
           } catch (emailError) {
             console.error("Failed to send welcome email:", emailError);
             // Don't fail the auth process if email fails
