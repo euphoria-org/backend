@@ -95,12 +95,22 @@ exports.login = async (req, res) => {
         message: "Invalid email or password",
       });
     }
-    if (user.authProvider !== "local") {
+    // Check if user has a password set (for Google users who have set a password)
+    if (user.authProvider !== "local" && !user.password) {
       return res.status(400).json({
         success: false,
         message: `Please sign in with ${user.authProvider}`,
       });
     }
+
+    // If Google user doesn't have a password set, require Google sign-in
+    if (user.authProvider === "google" && !user.password) {
+      return res.status(400).json({
+        success: false,
+        message: "Please sign in with Google or reset your password to set one",
+      });
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -235,17 +245,23 @@ exports.updatePassword = async (req, res) => {
         message: "User not found",
       });
     }
-    if (user.authProvider !== "local") {
-      return res.status(400).json({
-        success: false,
-        message: "Password update not allowed for OAuth users",
-      });
+
+    // Allow password updates for all users, including Google OAuth users
+    // For Google OAuth users, if they don't have a current password, we'll skip the current password check
+    let isCurrentPasswordValid = true;
+
+    if (user.authProvider === "local" || user.password) {
+      // Only check current password if user has a password set (local users or Google users who set a password)
+      isCurrentPasswordValid = await bcrypt.compare(
+        currentPassword,
+        user.password || ""
+      );
+    } else {
+      // For Google users without a password, we'll require them to verify their identity differently
+      // For now, we'll allow them to set a password without current password verification
+      isCurrentPasswordValid = true;
     }
 
-    const isCurrentPasswordValid = await bcrypt.compare(
-      currentPassword,
-      user.password
-    );
     if (!isCurrentPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -286,20 +302,14 @@ exports.forgotPassword = async (req, res) => {
 
     const user = await UserModel.findOne({ email });
     if (!user) {
-
       return res.status(200).json({
         success: true,
         message: "If the email exists, a reset link has been sent",
       });
     }
 
-    if (user.authProvider !== "local") {
-      return res.status(400).json({
-        success: false,
-        message: `Password reset not available for ${user.authProvider} users`,
-      });
-    }
-
+    // Allow password reset for all users, including Google OAuth users
+    // Google users can set a new password to use for future logins
 
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpiry = Date.now() + 3600000; // 1 hour

@@ -9,7 +9,10 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: function () {
+      // Password required only for local auth users
+      return this.authProvider === "local";
+    },
   },
   name: {
     type: String,
