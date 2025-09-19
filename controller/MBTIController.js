@@ -373,6 +373,95 @@ exports.submitTest = async (req, res) => {
   }
 };
 
+// Submit MBTI test responses for guests (no authentication required)
+exports.submitTestGuest = async (req, res) => {
+  try {
+    const { responses } = req.body; // Array of {questionId, answer} where answer is 1-5 scale
+
+    if (!responses || !Array.isArray(responses)) {
+      return res.status(400).json({
+        success: false,
+        message: "Responses must be provided as an array",
+      });
+    }
+
+    // Get all questions to validate and calculate scores
+    const questions = await MBTIModel.find().sort({ order: 1 });
+
+    if (responses.length !== questions.length) {
+      return res.status(400).json({
+        success: false,
+        message: `All ${questions.length} questions must be answered`,
+      });
+    }
+
+    // Calculate MBTI scores
+    const scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+
+    responses.forEach((response, index) => {
+      const question = questions[index];
+      const { answer } = response; // 1-5 scale (1=strongly disagree, 5=strongly agree)
+
+      // Validate answer range
+      if (answer < 1 || answer > 5) {
+        throw new Error(
+          `Answer for question ${index + 1} must be between 1 and 5`
+        );
+      }
+
+      // Convert 1-5 scale to -2 to +2 scale
+      let score = answer - 3;
+
+      // Apply score direction
+      if (question.scoreDirection === "-") {
+        score = -score;
+      }
+
+      // Add to positive letter, subtract from negative letter
+      scores[question.positiveLetter] += Math.max(0, score);
+      scores[question.negativeLetter] += Math.max(0, -score);
+    });
+
+    // Determine MBTI type
+    const mbtiType =
+      (scores.E > scores.I ? "E" : "I") +
+      (scores.S > scores.N ? "S" : "N") +
+      (scores.T > scores.F ? "T" : "F") +
+      (scores.J > scores.P ? "J" : "P");
+
+    // Save result (without userId for guest)
+    const mbtiResult = new MBTIResult({
+      userId: null, // No user ID for guests
+      mbtiType,
+      scores,
+      responses,
+      completedAt: new Date(),
+    });
+
+    await mbtiResult.save();
+
+    res.status(200).json({
+      success: true,
+      message: "MBTI test completed successfully",
+      result: {
+        mbtiType,
+        scores,
+        description: getMBTIDescription(mbtiType),
+        id: mbtiResult._id,
+        totalQuestions: questions.length,
+        completedAt: mbtiResult.completedAt,
+      },
+    });
+  } catch (error) {
+    console.error("Error submitting guest MBTI test:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error processing test submission",
+      error: error.message,
+    });
+  }
+};
+
 // Get user's MBTI history
 exports.getUserResults = async (req, res) => {
   try {

@@ -4,7 +4,8 @@ const mbtiResultSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false, // Allow null for guest submissions
+    default: null
   },
   mbtiType: {
     type: String,

@@ -5,11 +5,12 @@ const { verifyAdmin, verifyUser } = require("../middleware/Auth");
 
 // Public routes (accessible to anyone)
 router.get("/questions", MBTIController.getAllQuestions);
+router.post("/submit-test-guest", MBTIController.submitTestGuest);
+router.get("/result/:resultId", MBTIController.getResultDetails);
 
 // User routes (require user authentication)
 router.post("/submit-test", verifyUser, MBTIController.submitTest);
 router.get("/my-results", verifyUser, MBTIController.getUserResults);
-router.get("/result/:resultId", verifyUser, MBTIController.getResultDetails);
 
 // Admin routes (require admin authentication)
 router.post("/questions", verifyAdmin, MBTIController.addQuestion);
