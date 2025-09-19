@@ -3,6 +3,7 @@ const {
   getWelcomeTemplate,
   getPasswordResetTemplate,
   getVerificationTemplate,
+  getAccountConfirmationTemplate,
 } = require("./emailTemplatesProfessional");
 
 const createTransporter = () => {
@@ -109,8 +110,8 @@ exports.sendNotificationEmail = async (
 
     const content = `
       <div class="header">
-          <h1>📢 ${subject}</h1>
-          <p>Important update from MBTI App</p>
+          <h1>${subject}</h1>
+          <p>Important update from Euphoria</p>
       </div>
       
       <div class="content">
@@ -139,7 +140,7 @@ exports.sendNotificationEmail = async (
     const mailOptions = {
       from: `"MBTI Personality App" <${process.env.NODEMAIL_EMAIL}>`,
       to: email,
-      subject: `${subject} - MBTI App`,
+      subject: `${subject} - Euphoria`,
       html: getBaseTemplate(subject, content, "#3b82f6"),
     };
 
@@ -158,16 +159,16 @@ exports.sendPasswordResetEmail = async (email, name, resetToken) => {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     const mailOptions = {
-      from: `"MBTI App" <${process.env.NODEMAIL_EMAIL}>`,
+      from: `"Euphoria" <${process.env.NODEMAIL_EMAIL}>`,
       to: email,
-      subject: "Password Reset Request - MBTI App",
+      subject: "Password Reset Request - Euphoria",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #333; text-align: center;">Password Reset Request</h2>
           
           <p>Dear ${name},</p>
           
-          <p>We received a request to reset your password for your MBTI App account.</p>
+          <p>We received a request to reset your password for your Euphoria account.</p>
           
           <div style="text-align: center; margin: 30px 0;">
             <a href="${resetUrl}" 
@@ -185,7 +186,7 @@ exports.sendPasswordResetEmail = async (email, name, resetToken) => {
           
           <p>If you didn't request a password reset, please ignore this email or contact our support team if you have concerns.</p>
           
-          <p>Best regards,<br>MBTI App Team</p>
+          <p>Best regards,<br>Euphoria Team</p>
           
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
           <p style="font-size: 12px; color: #6c757d; text-align: center;">
@@ -200,6 +201,35 @@ exports.sendPasswordResetEmail = async (email, name, resetToken) => {
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error("Error sending password reset email:", error);
+    throw error;
+  }
+};
+
+exports.sendAccountConfirmationEmail = async (email, name) => {
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `"Euphoria" <${process.env.NODEMAIL_EMAIL}>`,
+      to: email,
+      subject: "Welcome to Euphoria - Account Created Successfully!",
+      html: getAccountConfirmationTemplate(name),
+      headers: {
+        "X-Priority": "3",
+        "X-MSMail-Priority": "Normal",
+        Importance: "Normal",
+        "List-Unsubscribe": `<mailto:${process.env.NODEMAIL_EMAIL}?subject=unsubscribe>`,
+      },
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(
+      "Account confirmation email sent successfully:",
+      result.messageId
+    );
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error("Error sending account confirmation email:", error);
     throw error;
   }
 };

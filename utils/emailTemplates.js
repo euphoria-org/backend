@@ -283,7 +283,7 @@ exports.getBaseTemplate = (title, content, primaryColor = "#007bff") => {
 exports.getWelcomeTemplate = (name, email, password) => {
   const content = `
     <div class="header">
-        <h1>🎉 Welcome to MBTI App!</h1>
+        <h1>🎉 Welcome to Euphoria!</h1>
         <p>Your journey to self-discovery begins here</p>
     </div>
     
@@ -291,7 +291,7 @@ exports.getWelcomeTemplate = (name, email, password) => {
         <div class="greeting">Hello ${name}! 👋</div>
         
         <div class="message">
-            Thank you for joining MBTI App! We're excited to have you on board. Your account has been successfully created using Google authentication.
+            Thank you for joining Euphoria! We're excited to have you on board. Your account has been successfully created using Google authentication.
         </div>
         
         <div class="info-box">
@@ -361,7 +361,7 @@ exports.getWelcomeTemplate = (name, email, password) => {
     </div>
   `;
 
-  return exports.getBaseTemplate("Welcome to MBTI App", content, "#10b981");
+  return exports.getBaseTemplate("Welcome to Euphoria", content, "#10b981");
 };
 
 exports.getPasswordResetTemplate = (name, resetToken) => {
@@ -379,7 +379,7 @@ exports.getPasswordResetTemplate = (name, resetToken) => {
         <div class="greeting">Hello ${name}! 👋</div>
         
         <div class="message">
-            We received a request to reset your password for your MBTI App account. If you made this request, click the button below to create a new password.
+            We received a request to reset your password for your Euphoria account. If you made this request, click the button below to create a new password.
         </div>
         
         <div class="button-center">
@@ -426,7 +426,7 @@ exports.getPasswordResetTemplate = (name, resetToken) => {
   `;
 
   return exports.getBaseTemplate(
-    "Password Reset - MBTI App",
+    "Password Reset - Euphoria",
     content,
     "#ef4444"
   );
@@ -447,7 +447,7 @@ exports.getVerificationTemplate = (name, verificationToken) => {
         <div class="greeting">Welcome ${name}! 🎉</div>
         
         <div class="message">
-            Thank you for creating your MBTI App account! To complete your registration and ensure account security, please verify your email address.
+            Thank you for creating your Euphoria account! To complete your registration and ensure account security, please verify your email address.
         </div>
         
         <div class="button-center">
@@ -485,7 +485,7 @@ exports.getVerificationTemplate = (name, verificationToken) => {
   `;
 
   return exports.getBaseTemplate(
-    "Verify Your Email - MBTI App",
+    "Verify Your Email - Euphoria",
     content,
     "#8b5cf6"
   );

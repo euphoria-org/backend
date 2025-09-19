@@ -601,3 +601,79 @@ exports.getVerificationTemplate = (name, verificationToken) => {
 
   return exports.getBaseTemplate("Verify Your Email - Euphoria", content);
 };
+
+// Account confirmation email template for manual signup
+exports.getAccountConfirmationTemplate = (name) => {
+  const content = `
+    <div class="header">
+        <h1>Welcome to Euphoria!</h1>
+        <p>Your account has been created successfully</p>
+    </div>
+    
+    <div class="content">
+        <div class="greeting">Hello ${name},</div>
+        
+        <div class="message">
+            Congratulations! Your Euphoria account has been successfully created. We're thrilled to have you join our community of personality discovery enthusiasts.
+        </div>
+        
+        <div class="info-box">
+            <h3>Your Journey Starts Now</h3>
+            <p>You can now access all the features of our personality testing platform and begin discovering what makes you unique.</p>
+        </div>
+        
+        <div class="features">
+            <h3 style="margin-bottom: 12px; color: var(--text-dark); font-size: 16px;">What you can do now:</h3>
+            <div class="feature-item">
+                <div class="feature-icon">•</div>
+                <div class="feature-text">Take comprehensive MBTI personality assessments</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">•</div>
+                <div class="feature-text">View detailed personality analysis and insights</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">•</div>
+                <div class="feature-text">Save and track your test results over time</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">•</div>
+                <div class="feature-text">Receive personalized MBTI reports via email</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">•</div>
+                <div class="feature-text">Access premium features and career insights</div>
+            </div>
+        </div>
+        
+        <div class="button-center">
+            <a href="${
+              process.env.FRONTEND_URL || "http://localhost:5173"
+            }/login" class="button">
+                Start Your Journey
+            </a>
+        </div>
+        
+        <div class="tips">
+            <h3 style="margin-bottom: 12px; color: var(--text-dark); font-size: 16px;">Pro Tips:</h3>
+            <ul style="margin: 0; padding-left: 20px; color: var(--gray-dark);">
+                <li style="margin-bottom: 8px;">Answer honestly for the most accurate results</li>
+                <li style="margin-bottom: 8px;">Take the test in a quiet environment</li>
+                <li style="margin-bottom: 8px;">Don't overthink your responses - go with your first instinct</li>
+                <li style="margin-bottom: 8px;">Explore different personality types to understand others better</li>
+            </ul>
+        </div>
+        
+        <div class="support">
+            <p style="margin: 20px 0; color: var(--gray-dark); text-align: center; font-size: 14px;">
+                Have questions? We're here to help! Reply to this email or contact our support team.
+            </p>
+        </div>
+    </div>
+  `;
+
+  return exports.getBaseTemplate(
+    "Welcome to Euphoria - Account Created!",
+    content
+  );
+};

@@ -3,7 +3,10 @@ const MBTIResult = require("../models/MBTIResult");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const { sendPasswordResetEmail } = require("../utils/emailService");
+const {
+  sendPasswordResetEmail,
+  sendAccountConfirmationEmail,
+} = require("../utils/emailService");
 
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
@@ -61,9 +64,19 @@ exports.signup = async (req, res) => {
     const userResponse = { ...user.toObject() };
     delete userResponse.password;
 
+    // Send account confirmation email
+    try {
+      await sendAccountConfirmationEmail(email, name);
+      console.log(`Account confirmation email sent to ${email}`);
+    } catch (emailError) {
+      // Log email error but don't fail the signup process
+      console.error("Failed to send confirmation email:", emailError);
+    }
+
     res.status(201).json({
       success: true,
-      message: "User registered successfully",
+      message:
+        "User registered successfully. A confirmation email has been sent to your email address.",
       data: {
         user: userResponse,
         token,
