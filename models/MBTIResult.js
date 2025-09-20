@@ -1,21 +1,44 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const mbtiResultSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: false, // Allow null for guest submissions
-    default: null
+    ref: "User",
+    required: false,
+    default: null,
+  },
+  sessionId: {
+    type: String,
+    required: false,
+    default: null,
+    index: true,
+  },
+  status: {
+    type: String,
+    enum: ["temporary", "claimed"],
+    default: "temporary",
   },
   mbtiType: {
     type: String,
     required: true,
     enum: [
-      'INTJ', 'INTP', 'ENTJ', 'ENTP',
-      'INFJ', 'INFP', 'ENFJ', 'ENFP',
-      'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
-      'ISTP', 'ISFP', 'ESTP', 'ESFP'
-    ]
+      "INTJ",
+      "INTP",
+      "ENTJ",
+      "ENTP",
+      "INFJ",
+      "INFP",
+      "ENFJ",
+      "ENFP",
+      "ISTJ",
+      "ISFJ",
+      "ESTJ",
+      "ESFJ",
+      "ISTP",
+      "ISFP",
+      "ESTP",
+      "ESFP",
+    ],
   },
   scores: {
     E: { type: Number, default: 0 },
@@ -25,20 +48,22 @@ const mbtiResultSchema = new mongoose.Schema({
     T: { type: Number, default: 0 },
     F: { type: Number, default: 0 },
     J: { type: Number, default: 0 },
-    P: { type: Number, default: 0 }
+    P: { type: Number, default: 0 },
   },
-  responses: [{
-    questionIndex: Number,
-    answer: {
-      type: Number,
-      min: 1,
-      max: 5
-    }
-  }],
+  responses: [
+    {
+      questionIndex: Number,
+      answer: {
+        type: Number,
+        min: 1,
+        max: 5,
+      },
+    },
+  ],
   completedAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
-module.exports = mongoose.model('MBTIResult', mbtiResultSchema);
+module.exports = mongoose.model("MBTIResult", mbtiResultSchema);

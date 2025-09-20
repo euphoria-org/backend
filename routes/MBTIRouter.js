@@ -10,6 +10,7 @@ router.get("/result/:resultId", MBTIController.getResultDetails);
 
 // User routes (require user authentication)
 router.post("/submit-test", verifyUser, MBTIController.submitTest);
+router.post("/claim-result", verifyUser, MBTIController.claimTemporaryResult);
 router.get("/my-results", verifyUser, MBTIController.getUserResults);
 
 // Admin routes (require admin authentication)

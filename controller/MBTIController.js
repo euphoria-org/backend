@@ -374,14 +374,22 @@ exports.submitTest = async (req, res) => {
 };
 
 // Submit MBTI test responses for guests (no authentication required)
+// Creates a temporary result with session ID that can be claimed later
 exports.submitTestGuest = async (req, res) => {
   try {
-    const { responses } = req.body; // Array of {questionId, answer} where answer is 1-5 scale
+    const { responses, sessionId } = req.body; // Array of {questionId, answer} where answer is 1-5 scale
 
     if (!responses || !Array.isArray(responses)) {
       return res.status(400).json({
         success: false,
         message: "Responses must be provided as an array",
+      });
+    }
+
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        message: "Session ID is required for temporary storage",
       });
     }
 
@@ -429,9 +437,11 @@ exports.submitTestGuest = async (req, res) => {
       (scores.T > scores.F ? "T" : "F") +
       (scores.J > scores.P ? "J" : "P");
 
-    // Save result (without userId for guest)
+    // Save result with temporary status and session ID
     const mbtiResult = new MBTIResult({
-      userId: null, // No user ID for guests
+      userId: null, // No user ID for temporary results
+      sessionId,
+      status: "temporary",
       mbtiType,
       scores,
       responses,
@@ -442,7 +452,8 @@ exports.submitTestGuest = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "MBTI test completed successfully",
+      message:
+        "MBTI test completed successfully. Please login to save and view your personalized results.",
       result: {
         mbtiType,
         scores,
@@ -462,14 +473,66 @@ exports.submitTestGuest = async (req, res) => {
   }
 };
 
-// Get user's MBTI history
+exports.claimTemporaryResult = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    const userId = req.user._id;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        message: "Session ID is required to claim results",
+      });
+    }
+
+    const temporaryResult = await MBTIResult.findOne({
+      sessionId,
+      status: "temporary",
+      userId: null,
+    });
+
+    if (!temporaryResult) {
+      return res.status(404).json({
+        success: false,
+        message: "No temporary test result found with this session ID",
+      });
+    }
+
+    temporaryResult.userId = userId;
+    temporaryResult.status = "claimed";
+    await temporaryResult.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Test result successfully linked to your account",
+      result: {
+        id: temporaryResult._id,
+        mbtiType: temporaryResult.mbtiType,
+        scores: temporaryResult.scores,
+        description: getMBTIDescription(temporaryResult.mbtiType),
+        completedAt: temporaryResult.completedAt,
+      },
+    });
+  } catch (error) {
+    console.error("Error claiming temporary result:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error claiming test result",
+      error: error.message,
+    });
+  }
+};
+
 exports.getUserResults = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const results = await MBTIResult.find({ userId })
+    const results = await MBTIResult.find({
+      userId,
+      status: "claimed",
+    })
       .sort({ completedAt: -1 })
-      .select("-responses"); // Exclude detailed responses for overview
+      .select("-responses");
 
     res.status(200).json({
       success: true,
@@ -486,21 +549,30 @@ exports.getUserResults = async (req, res) => {
   }
 };
 
-// Get specific result details
 exports.getResultDetails = async (req, res) => {
   try {
     const { resultId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user ? req.user._id : null;
 
-    const result = await MBTIResult.findOne({
-      _id: resultId,
-      userId,
-    });
+    let result;
+
+    if (userId) {
+      result = await MBTIResult.findOne({
+        _id: resultId,
+        userId,
+        status: "claimed",
+      });
+    } else {
+      result = await MBTIResult.findOne({
+        _id: resultId,
+        status: "temporary",
+      });
+    }
 
     if (!result) {
       return res.status(404).json({
         success: false,
-        message: "Result not found",
+        message: "Result not found or access denied",
       });
     }
 
