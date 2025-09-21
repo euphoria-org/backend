@@ -64,12 +64,9 @@ exports.signup = async (req, res) => {
     const userResponse = { ...user.toObject() };
     delete userResponse.password;
 
-    // Send account confirmation email
     try {
       await sendAccountConfirmationEmail(email, name);
-      console.log(`Account confirmation email sent to ${email}`);
     } catch (emailError) {
-      // Log email error but don't fail the signup process
       console.error("Failed to send confirmation email:", emailError);
     }
 

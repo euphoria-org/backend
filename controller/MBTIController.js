@@ -511,6 +511,11 @@ exports.claimTemporaryResult = async (req, res) => {
         scores: temporaryResult.scores,
         description: getMBTIDescription(temporaryResult.mbtiType),
         completedAt: temporaryResult.completedAt,
+        user: {
+          id: req.user._id,
+          name: req.user.name,
+          email: req.user.email,
+        },
       },
     });
   } catch (error) {
@@ -561,7 +566,7 @@ exports.getResultDetails = async (req, res) => {
         _id: resultId,
         userId,
         status: "claimed",
-      });
+      }).populate("userId", "name email");
     } else {
       result = await MBTIResult.findOne({
         _id: resultId,
@@ -751,13 +756,7 @@ async function logAdminAction(
     });
     await adminLog.save();
 
-    // Also log to console for immediate monitoring
     const timestamp = new Date().toISOString();
-    console.log(
-      `[ADMIN ACTION] ${timestamp} - Admin ${adminId} performed ${action} on ${resourceType}${
-        resourceId ? ` (ID: ${resourceId})` : ""
-      }${details ? ` - ${details}` : ""}`
-    );
   } catch (error) {
     console.error("Error logging admin action:", error);
   }

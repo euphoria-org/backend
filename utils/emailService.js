@@ -37,10 +37,8 @@ exports.sendWelcomeEmailWithCredentials = async (email, name, password) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("Welcome email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error("Error sending welcome email:", error);
     throw error;
   }
 };
@@ -63,10 +61,8 @@ exports.sendPasswordResetEmail = async (email, name, resetToken) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("Password reset email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error("Error sending password reset email:", error);
     throw error;
   }
 };
@@ -89,10 +85,8 @@ exports.sendVerificationEmail = async (email, name, verificationToken) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("Verification email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error("Error sending verification email:", error);
     throw error;
   }
 };
@@ -145,10 +139,8 @@ exports.sendNotificationEmail = async (
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("Notification email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error("Error sending notification email:", error);
     throw error;
   }
 };
@@ -197,10 +189,8 @@ exports.sendPasswordResetEmail = async (email, name, resetToken) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("Password reset email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error("Error sending password reset email:", error);
     throw error;
   }
 };
@@ -223,13 +213,8 @@ exports.sendAccountConfirmationEmail = async (email, name) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(
-      "Account confirmation email sent successfully:",
-      result.messageId
-    );
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error("Error sending account confirmation email:", error);
     throw error;
   }
 };

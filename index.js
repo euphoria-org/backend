@@ -83,18 +83,15 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     passport.authenticate("google", { failureRedirect: "/auth/failure" }),
     (req, res) => {
       try {
-        // Generate JWT token
         const jwt = require("jsonwebtoken");
         const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
           expiresIn: process.env.JWT_EXPIRES_IN || "7d",
         });
 
-        // Determine redirect URL based on referrer or query parameter
         let redirectUrl = process.env.FRONTEND_URL || "http://localhost:5175";
 
-        // Check if request came from admin panel
         const referrer = req.get("Referrer") || req.get("Origin");
-        const returnTo = req.query.state; // Can be used to pass redirect info
+        const returnTo = req.query.state;
 
         if (
           referrer &&
@@ -107,10 +104,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           redirectUrl = process.env.ADMIN_URL || "http://localhost:5174";
         }
 
-        // Redirect to appropriate frontend with token
         res.redirect(`${redirectUrl}/auth/success?token=${token}`);
       } catch (error) {
-        console.error("OAuth callback error:", error);
         const fallbackUrl = process.env.FRONTEND_URL || "http://localhost:5175";
         res.redirect(`${fallbackUrl}/login?error=server_error`);
       }
@@ -118,7 +113,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   );
 
   app.get("/auth/failure", (req, res) => {
-    // Determine redirect URL based on referrer
     let redirectUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const referrer = req.get("Referrer") || req.get("Origin");
 
@@ -129,7 +123,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     res.redirect(`${redirectUrl}/login?error=google_auth_failed`);
   });
 } else {
-  // Disabled Google OAuth routes with helpful error messages
   app.get("/auth/google", (req, res) => {
     res.status(503).json({
       success: false,
@@ -167,11 +160,6 @@ app.use((req, res) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-  console.log(
-    `Google OAuth redirect URI: http://localhost:${port}/auth/google/callback`
-  );
-});
+app.listen(port, () => {});
 
 module.exports = app;

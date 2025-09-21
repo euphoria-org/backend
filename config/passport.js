@@ -30,15 +30,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          console.log(
-            "Google OAuth Profile:",
-            profile.id,
-            profile.emails[0].value,
-            profile.displayName
-          );
-
-          // Use a more robust query to prevent duplicates
-          // Check by googleId first (most specific), then by email
+          
           let user = await UserModel.findOne({
             $or: [
               { googleId: profile.id },
@@ -48,9 +40,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           });
 
           if (user) {
-            console.log("Existing user found:", user._id, user.email);
-
-            // Update user to ensure consistency
+          
             let needsUpdate = false;
 
             if (!user.googleId && profile.id) {
@@ -70,15 +60,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
             if (needsUpdate) {
               await user.save();
-              console.log("Updated existing user with Google OAuth data");
             }
 
             return done(null, user);
           }
 
-          console.log("Creating new user for Google OAuth");
-
-          // Create new user - ensure no duplicate creation with atomic operation
           const temporaryPassword = crypto.randomBytes(12).toString("hex");
 
           user = new UserModel({
@@ -95,19 +81,14 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           });
 
           await user.save();
-          console.log("New Google user created:", user._id, user.email);
-
-          // Send welcome email with credentials
           try {
             await sendWelcomeEmailWithCredentials(
               user.email,
               user.name,
               temporaryPassword // Send the plain password in email before it was hashed
             );
-            console.log("Welcome email sent to:", user.email);
           } catch (emailError) {
             console.error("Failed to send welcome email:", emailError);
-            // Don't fail the auth process if email fails
           }
 
           return done(null, user);
@@ -118,7 +99,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       }
     )
   );
-  console.log("Google OAuth strategy initialized");
 } else {
   console.warn(
     "Google OAuth credentials not found. Google authentication will be disabled."
