@@ -348,6 +348,7 @@ exports.submitTest = async (req, res) => {
       mbtiType,
       scores,
       responses,
+      status: "claimed", // Set status to claimed for authenticated users
       completedAt: new Date(),
     });
 
