@@ -13,5 +13,6 @@ router.use(verifyUser);
 router.get("/profile", UserController.getProfile);
 router.put("/profile", UserController.updateProfile);
 router.put("/update-password", UserController.updatePassword);
+router.get("/mbti-results", UserController.getUserMBTIResults);
 
 module.exports = router;

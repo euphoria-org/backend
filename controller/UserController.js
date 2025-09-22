@@ -279,11 +279,9 @@ exports.updatePassword = async (req, res) => {
       });
     }
 
-    const hashedNewPassword = await hashPassword(newPassword);
-
-    await UserModel.findByIdAndUpdate(userId, {
-      password: hashedNewPassword,
-    });
+    // Update password - the pre-save hook in UserModel will hash it automatically
+    user.password = newPassword;
+    await user.save();
 
     res.status(200).json({
       success: true,
@@ -398,6 +396,42 @@ exports.resetPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Reset password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Get user's MBTI results
+exports.getUserMBTIResults = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get user with populated MBTI results
+    const user = await UserModel.findById(userId)
+      .select("mbtiResults")
+      .populate({
+        path: "mbtiResults",
+        select: "mbtiType scores completedAt createdAt",
+        options: { sort: { completedAt: -1 } }, // Sort by most recent first
+      });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user.mbtiResults,
+      count: user.mbtiResults.length,
+    });
+  } catch (error) {
+    console.error("Get user MBTI results error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",

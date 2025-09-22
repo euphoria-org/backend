@@ -1,5 +1,6 @@
 const MBTIModel = require("../models/MBTIModel");
 const MBTIResult = require("../models/MBTIResult");
+const User = require("../models/UserModel");
 
 exports.addQuestion = async (req, res) => {
   try {
@@ -147,7 +148,6 @@ exports.getAllQuestions = async (req, res) => {
 
 exports.updateQuestion = async (req, res) => {
   try {
-    // Verify admin access
     if (!req.admin) {
       return res.status(403).json({
         success: false,
@@ -265,7 +265,6 @@ exports.updateQuestion = async (req, res) => {
       runValidators: true,
     });
 
-    // Log admin action
     logAdminAction(req.admin._id, "UPDATE", "MBTI Question", id);
 
     res.status(200).json({
@@ -283,12 +282,9 @@ exports.updateQuestion = async (req, res) => {
   }
 };
 
-// Additional methods for user MBTI test functionality
-
-// Submit MBTI test responses and calculate result
 exports.submitTest = async (req, res) => {
   try {
-    const { responses } = req.body; // Array of {questionId, answer} where answer is 1-5 scale
+    const { responses } = req.body;
     const userId = req.user._id;
 
     if (!responses || !Array.isArray(responses)) {
@@ -298,7 +294,6 @@ exports.submitTest = async (req, res) => {
       });
     }
 
-    // Get all questions to validate and calculate scores
     const questions = await MBTIModel.find().sort({ order: 1 });
 
     if (responses.length !== questions.length) {
@@ -308,51 +303,50 @@ exports.submitTest = async (req, res) => {
       });
     }
 
-    // Calculate MBTI scores
     const scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
 
     responses.forEach((response, index) => {
       const question = questions[index];
-      const { answer } = response; // 1-5 scale (1=strongly disagree, 5=strongly agree)
+      const { answer } = response;
 
-      // Validate answer range
       if (answer < 1 || answer > 5) {
         throw new Error(
           `Answer for question ${index + 1} must be between 1 and 5`
         );
       }
 
-      // Convert 1-5 scale to -2 to +2 scale
       let score = answer - 3;
 
-      // Apply score direction
       if (question.scoreDirection === "-") {
         score = -score;
       }
 
-      // Add to positive letter, subtract from negative letter
       scores[question.positiveLetter] += Math.max(0, score);
       scores[question.negativeLetter] += Math.max(0, -score);
     });
 
-    // Determine MBTI type
     const mbtiType =
       (scores.E > scores.I ? "E" : "I") +
       (scores.S > scores.N ? "S" : "N") +
       (scores.T > scores.F ? "T" : "F") +
       (scores.J > scores.P ? "J" : "P");
 
-    // Save result
     const mbtiResult = new MBTIResult({
       userId,
       mbtiType,
       scores,
       responses,
-      status: "claimed", // Set status to claimed for authenticated users
+      status: "claimed",
       completedAt: new Date(),
     });
 
     await mbtiResult.save();
+
+    await User.findByIdAndUpdate(
+      userId,
+      { $push: { mbtiResults: mbtiResult._id } },
+      { new: true }
+    );
 
     res.status(200).json({
       success: true,
