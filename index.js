@@ -62,6 +62,7 @@ app.use(passport.session());
 const MBTIRouter = require("./routes/MBTIRouter");
 const AdminRouter = require("./routes/AdminRouter");
 const UserRouter = require("./routes/UserRouter");
+const ChatBotRouter = require("./routes/ChatBotRouter");
 
 const port = process.env.PORT || 8080;
 connectDB();
@@ -69,6 +70,7 @@ connectDB();
 app.use("/api/mbti", MBTIRouter);
 app.use("/api/admin", AdminRouter);
 app.use("/api/user", UserRouter);
+app.use("/api/chatbot", ChatBotRouter);
 
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   app.get(
