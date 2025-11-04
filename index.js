@@ -63,6 +63,7 @@ const MBTIRouter = require("./routes/MBTIRouter");
 const AdminRouter = require("./routes/AdminRouter");
 const UserRouter = require("./routes/UserRouter");
 const ChatBotRouter = require("./routes/ChatBotRouter");
+const PERMARouter = require("./routes/PERMARouter");
 
 const port = process.env.PORT || 8080;
 connectDB();
@@ -71,6 +72,7 @@ app.use("/api/mbti", MBTIRouter);
 app.use("/api/admin", AdminRouter);
 app.use("/api/user", UserRouter);
 app.use("/api/chatbot", ChatBotRouter);
+app.use("/api/perma", PERMARouter);
 
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   app.get(
