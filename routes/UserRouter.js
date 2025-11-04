@@ -14,5 +14,6 @@ router.get("/profile", UserController.getProfile);
 router.put("/profile", UserController.updateProfile);
 router.put("/update-password", UserController.updatePassword);
 router.get("/mbti-results", UserController.getUserMBTIResults);
+router.get("/perma-results", UserController.getUserPERMAResults);
 
 module.exports = router;

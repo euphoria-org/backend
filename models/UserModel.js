@@ -41,6 +41,12 @@ const userSchema = new mongoose.Schema({
       ref: "MBTIResult",
     },
   ],
+  permaResults: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PERMAResult",
+    },
+  ],
   passwordResetToken: {
     type: String,
   },
