@@ -11,6 +11,7 @@ router.use(verifyAdmin);
 router.get("/profile", AdminController.getAdminProfile);
 
 router.get("/logs", AdminController.getAdminLogs);
+router.get("/activity-logs", AdminController.getAllActivityLogs);
 
 router.get("/dashboard-stats", AdminController.getDashboardStats);
 

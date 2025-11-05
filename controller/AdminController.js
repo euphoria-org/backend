@@ -236,29 +236,49 @@ exports.getDashboardStats = async (req, res) => {
   try {
     const MBTIModel = require("../models/MBTIModel");
     const MBTIResult = require("../models/MBTIResult");
+    const PERMAModel = require("../models/PERMAModel");
+    const PERMAResult = require("../models/PERMAResult");
 
-    // Get total questions
-    const totalQuestions = await MBTIModel.countDocuments();
+    // Get individual question counts
+    const mbtiQuestionsCount = await MBTIModel.countDocuments();
+    const permaQuestionsCount = await PERMAModel.countDocuments();
+    const iqQuestionsCount = 0; // Placeholder for IQ questions when implemented
 
-    // Get total test completions
-    const totalTests = await MBTIResult.countDocuments();
+    // Get total questions across all tests
+    const totalQuestions = mbtiQuestionsCount + permaQuestionsCount + iqQuestionsCount;
+
+    // Get individual test completions
+    const mbtiTestsCount = await MBTIResult.countDocuments();
+    const permaTestsCount = await PERMAResult.countDocuments();
+    const iqTestsCount = 0; // Placeholder for IQ tests when implemented
+
+    // Get total test completions across all tests
+    const totalTests = mbtiTestsCount + permaTestsCount + iqTestsCount;
 
     // Get tests completed today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const testsToday = await MBTIResult.countDocuments({
+    const mbtiTestsToday = await MBTIResult.countDocuments({
       completedAt: { $gte: today },
     });
+    const permaTestsToday = await PERMAResult.countDocuments({
+      completedAt: { $gte: today },
+    });
+    const testsToday = mbtiTestsToday + permaTestsToday;
 
     // Get tests completed this week
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    const testsThisWeek = await MBTIResult.countDocuments({
+    const mbtiTestsThisWeek = await MBTIResult.countDocuments({
       completedAt: { $gte: weekAgo },
     });
+    const permaTestsThisWeek = await PERMAResult.countDocuments({
+      completedAt: { $gte: weekAgo },
+    });
+    const testsThisWeek = mbtiTestsThisWeek + permaTestsThisWeek;
 
     // Get most common MBTI type
-    const typeDistribution = await MBTIResult.aggregate([
+    const mbtiTypeDistribution = await MBTIResult.aggregate([
       {
         $group: {
           _id: "$mbtiType",
@@ -273,8 +293,40 @@ exports.getDashboardStats = async (req, res) => {
       },
     ]);
 
-    const mostCommonType =
-      typeDistribution.length > 0 ? typeDistribution[0] : null;
+    const mostCommonMBTIType =
+      mbtiTypeDistribution.length > 0 ? mbtiTypeDistribution[0] : null;
+
+    // Get most popular PERMA dimension (highest average score across all tests)
+    const permaPopularDimension = await PERMAResult.aggregate([
+      {
+        $project: {
+          dimensions: { $objectToArray: "$scores" },
+        },
+      },
+      { $unwind: "$dimensions" },
+      {
+        $group: {
+          _id: "$dimensions.k",
+          avgScore: { $avg: "$dimensions.v" },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { avgScore: -1 },
+      },
+      {
+        $limit: 1,
+      },
+    ]);
+
+    const mostPopularPERMADimension =
+      permaPopularDimension.length > 0
+        ? {
+            dimension: permaPopularDimension[0]._id,
+            avgScore: permaPopularDimension[0].avgScore,
+            count: permaPopularDimension[0].count,
+          }
+        : null;
 
     res.status(200).json({
       success: true,
@@ -283,11 +335,159 @@ exports.getDashboardStats = async (req, res) => {
         totalTests,
         testsToday,
         testsThisWeek,
-        mostCommonType,
+        mostCommonType: mostCommonMBTIType,
+        mostPopularPERMADimension,
+        // Individual counts for each test type
+        questionBreakdown: {
+          mbti: mbtiQuestionsCount,
+          perma: permaQuestionsCount,
+          iq: iqQuestionsCount,
+        },
+        testBreakdown: {
+          mbti: mbtiTestsCount,
+          perma: permaTestsCount,
+          iq: iqTestsCount,
+        },
       },
     });
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Get all activity logs (admin actions + user activities)
+exports.getAllActivityLogs = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+    const filter = req.query.filter || "all"; // all, admin, user, login, test
+
+    const UserModel = require("../models/UserModel");
+    const MBTIResult = require("../models/MBTIResult");
+    const PERMAResult = require("../models/PERMAResult");
+
+    let activityLogs = [];
+
+    // Fetch admin logs
+    if (filter === "all" || filter === "admin" || filter === "login") {
+      const adminLogs = await AdminLog.find()
+        .populate("adminId", "username email")
+        .sort({ timestamp: -1 })
+        .lean();
+
+      adminLogs.forEach((log) => {
+        activityLogs.push({
+          id: log._id,
+          type: "admin",
+          action: log.action,
+          user: log.adminId ? log.adminId.username : "Unknown Admin",
+          email: log.adminId ? log.adminId.email : "N/A",
+          details: log.details || log.resourceType,
+          resourceType: log.resourceType,
+          timestamp: log.timestamp || log.createdAt,
+          ipAddress: log.ipAddress || "N/A",
+        });
+      });
+    }
+
+    // Fetch user login activities
+    if (filter === "all" || filter === "user" || filter === "login") {
+      const users = await UserModel.find()
+        .select("name email createdAt updatedAt")
+        .sort({ createdAt: -1 })
+        .lean();
+
+      users.forEach((user) => {
+        activityLogs.push({
+          id: user._id,
+          type: "user_registration",
+          action: "REGISTER",
+          user: user.name,
+          email: user.email,
+          details: "User registered",
+          resourceType: "User Account",
+          timestamp: user.createdAt,
+          ipAddress: "N/A",
+        });
+      });
+    }
+
+    // Fetch MBTI test results
+    if (filter === "all" || filter === "test") {
+      const mbtiResults = await MBTIResult.find()
+        .populate("userId", "name email")
+        .sort({ completedAt: -1 })
+        .lean();
+
+      mbtiResults.forEach((result) => {
+        activityLogs.push({
+          id: result._id,
+          type: "mbti_test",
+          action: "TEST_COMPLETED",
+          user: result.userId ? result.userId.name : "Unknown User",
+          email: result.userId ? result.userId.email : "N/A",
+          details: `Completed MBTI Test - Result: ${result.mbtiType || "N/A"}`,
+          resourceType: "MBTI Test",
+          timestamp: result.completedAt || result.createdAt,
+          ipAddress: "N/A",
+          testResult: result.mbtiType,
+        });
+      });
+    }
+
+    // Fetch PERMA test results
+    if (filter === "all" || filter === "test") {
+      const permaResults = await PERMAResult.find()
+        .populate("userId", "name email")
+        .sort({ completedAt: -1 })
+        .lean();
+
+      permaResults.forEach((result) => {
+        const avgScore =
+          result.scores &&
+          Object.values(result.scores).reduce((a, b) => a + b, 0) / 5;
+        activityLogs.push({
+          id: result._id,
+          type: "perma_test",
+          action: "TEST_COMPLETED",
+          user: result.userId ? result.userId.name : "Unknown User",
+          email: result.userId ? result.userId.email : "N/A",
+          details: `Completed PERMA Test - Avg Score: ${
+            avgScore ? avgScore.toFixed(2) : "N/A"
+          }`,
+          resourceType: "PERMA Test",
+          timestamp: result.completedAt || result.createdAt,
+          ipAddress: "N/A",
+          testResult: avgScore ? avgScore.toFixed(2) : "N/A",
+        });
+      });
+    }
+
+    // Sort all logs by timestamp
+    activityLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Apply pagination
+    const total = activityLogs.length;
+    const paginatedLogs = activityLogs.slice(skip, skip + limit);
+
+    res.status(200).json({
+      success: true,
+      data: paginatedLogs,
+      pagination: {
+        current: page,
+        total: Math.ceil(total / limit),
+        count: paginatedLogs.length,
+        totalLogs: total,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching all activity logs:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
