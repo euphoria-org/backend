@@ -238,11 +238,13 @@ exports.getDashboardStats = async (req, res) => {
     const MBTIResult = require("../models/MBTIResult");
     const PERMAModel = require("../models/PERMAModel");
     const PERMAResult = require("../models/PERMAResult");
+    const IQModel = require("../models/IQModel");
+    const IQResult = require("../models/IQResult");
 
     // Get individual question counts
     const mbtiQuestionsCount = await MBTIModel.countDocuments();
     const permaQuestionsCount = await PERMAModel.countDocuments();
-    const iqQuestionsCount = 0; // Placeholder for IQ questions when implemented
+    const iqQuestionsCount = await IQModel.countDocuments();
 
     // Get total questions across all tests
     const totalQuestions = mbtiQuestionsCount + permaQuestionsCount + iqQuestionsCount;
@@ -250,7 +252,7 @@ exports.getDashboardStats = async (req, res) => {
     // Get individual test completions
     const mbtiTestsCount = await MBTIResult.countDocuments();
     const permaTestsCount = await PERMAResult.countDocuments();
-    const iqTestsCount = 0; // Placeholder for IQ tests when implemented
+    const iqTestsCount = await IQResult.countDocuments();
 
     // Get total test completions across all tests
     const totalTests = mbtiTestsCount + permaTestsCount + iqTestsCount;
@@ -264,7 +266,10 @@ exports.getDashboardStats = async (req, res) => {
     const permaTestsToday = await PERMAResult.countDocuments({
       completedAt: { $gte: today },
     });
-    const testsToday = mbtiTestsToday + permaTestsToday;
+    const iqTestsToday = await IQResult.countDocuments({
+      completedAt: { $gte: today },
+    });
+    const testsToday = mbtiTestsToday + permaTestsToday + iqTestsToday;
 
     // Get tests completed this week
     const weekAgo = new Date();
@@ -275,7 +280,10 @@ exports.getDashboardStats = async (req, res) => {
     const permaTestsThisWeek = await PERMAResult.countDocuments({
       completedAt: { $gte: weekAgo },
     });
-    const testsThisWeek = mbtiTestsThisWeek + permaTestsThisWeek;
+    const iqTestsThisWeek = await IQResult.countDocuments({
+      completedAt: { $gte: weekAgo },
+    });
+    const testsThisWeek = mbtiTestsThisWeek + permaTestsThisWeek + iqTestsThisWeek;
 
     // Get most common MBTI type
     const mbtiTypeDistribution = await MBTIResult.aggregate([
