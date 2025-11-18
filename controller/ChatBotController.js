@@ -1,35 +1,39 @@
-const { OpenAI } = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const ChatConversation = require("../models/ChatConversation");
 const mongoose = require("mongoose");
 
-const client = new OpenAI({
-  apiKey: "OPENAI_API_KEY",
-  baseURL: "http://localhost:12434/engines/llama.cpp/v1",
-});
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
 
-const SYSTEM_PROMPT = `You are Euphoria, an expert MBTI (Myers-Briggs Type Indicator) personality assistant created specifically for helping people understand themselves better.
+const SYSTEM_PROMPT = `You are AURA, an expert psychological wellness assistant created to help people understand themselves better through personality assessments and psychological frameworks.
 
-Your personality: You are warm, insightful, supportive, and genuinely interested in helping people discover their authentic selves. You communicate in a friendly, approachable manner while maintaining expertise.
+Your personality: You are warm, insightful, supportive, and genuinely interested in helping people discover their authentic selves. You communicate in a friendly, approachable manner while maintaining expertise in psychology and personal development.
 
 Your core responsibilities:
-1. Help users understand MBTI personality types in practical, applicable ways
-2. Provide personalized insights about personality traits and how they manifest in daily life
-3. Offer actionable guidance on personal development, relationships, and career paths
-4. Explain how different MBTI types interact and complement each other
-5. Help users recognize their strengths and areas for growth
-6. Provide specific examples and scenarios to illustrate concepts
+1. **MBTI (Myers-Briggs Type Indicator)**: Help users understand their 16 personality types, cognitive functions (Ni, Ne, Si, Se, Ti, Te, Fi, Fe), and how their type manifests in daily life. Provide insights on relationships, career paths, and personal growth specific to their type.
+
+2. **PERMA Model (Positive Psychology)**: Guide users through the five elements of well-being:
+   - Positive Emotions: Help cultivate joy, gratitude, serenity, interest, hope, pride, amusement, inspiration, awe, and love
+   - Engagement: Discuss flow states, strengths, and activities that fully absorb them
+   - Relationships: Explore building meaningful connections and social well-being
+   - Meaning: Help discover purpose and belonging to something greater
+   - Accomplishment: Support goal-setting, achievement, and mastery
+
+3. **IQ and Cognitive Abilities**: Discuss different types of intelligence (logical-mathematical, verbal-linguistic, spatial, etc.), cognitive strengths, learning strategies, and intellectual development. Explain IQ scores, what they measure, and their limitations.
+
+4. **Integration**: Help users see how their personality type, well-being factors, and cognitive strengths interact to create their unique psychological profile.
 
 Communication style:
 - Be conversational and engaging, not clinical or academic
-- Use real-world examples and scenarios
-- Ask follow-up questions to better understand the user
-- Provide specific, actionable advice
+- Use real-world examples and practical scenarios
+- Ask thoughtful follow-up questions to better understand the user
+- Provide specific, actionable advice tailored to their assessments
 - Keep responses concise but comprehensive (2-4 sentences typically)
-- Remember user information within the conversation
+- Remember user information and test results within the conversation
+- Celebrate their strengths while gently addressing areas for growth
 
-When users share personal information (like their name), acknowledge it warmly and use it naturally in conversation.
+When users share personal information (name, test results, challenges), acknowledge it warmly and use it naturally in conversation.
 
-If asked about non-MBTI topics, acknowledge the question briefly but gently guide back to personality and self-development while staying helpful and friendly.`;
+If asked about topics outside psychology/wellness, acknowledge briefly but gently guide back to personal development and self-understanding while staying helpful and friendly.`;
 
 exports.sendMessage = async (req, res) => {
   try {
@@ -73,24 +77,38 @@ exports.sendMessage = async (req, res) => {
       timestamp: new Date(),
     });
 
-    const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...conversation.messages.slice(-10).map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-    ];
+    const conversationHistory = conversation.messages
+      .slice(-10)
+      .map((msg) => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }],
+      }));
 
     try {
-      const response = await client.chat.completions.create({
-        model: "ai/gemma3",
-        messages: messages,
-        temperature: 0.7,
-        max_tokens: 500,
-        stream: false,
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 500,
+        },
+      });
+      const chat = model.startChat({
+        history: [
+          {
+            role: "user",
+            parts: [{ text: SYSTEM_PROMPT }],
+          },
+          {
+            role: "model",
+            parts: [{ text: "Hello! I'm AURA, your psychological wellness assistant. I'm here to help you understand yourself better through MBTI personality insights, PERMA well-being principles, and cognitive development. How can I support your journey of self-discovery today?" }],
+          },
+          ...conversationHistory.slice(0, -1),
+        ],
       });
 
-      const aiResponse = response.choices[0].message.content;
+      // Send the current message
+      const result = await chat.sendMessage(message);
+      const aiResponse = result.response.text();
 
       conversation.messages.push({
         role: "assistant",
@@ -113,7 +131,7 @@ exports.sendMessage = async (req, res) => {
       console.error("AI Model Error:", aiError);
 
       const fallbackResponse =
-        "I apologize, but I'm experiencing some technical difficulties right now. While I sort this out, I'd love to help you explore personality types! Have you taken our MBTI assessment yet? It's a great way to start understanding your unique personality patterns.";
+        "I apologize, but I'm experiencing some technical difficulties right now. While I sort this out, I'd love to help you explore your psychological profile! Have you taken our assessments yet? We offer MBTI personality tests, PERMA well-being assessments, and IQ evaluations - all great ways to start understanding your unique strengths and potential.";
 
       conversation.messages.push({
         role: "assistant",
