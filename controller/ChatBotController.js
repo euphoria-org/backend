@@ -1,5 +1,9 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const ChatConversation = require("../models/ChatConversation");
+const MBTIResult = require("../models/MBTIResult");
+const PERMAResult = require("../models/PERMAResult");
+const IQResult = require("../models/IQResult");
+const User = require("../models/UserModel");
 const mongoose = require("mongoose");
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
@@ -34,6 +38,140 @@ Communication style:
 When users share personal information (name, test results, challenges), acknowledge it warmly and use it naturally in conversation.
 
 If asked about topics outside psychology/wellness, acknowledge briefly but gently guide back to personal development and self-understanding while staying helpful and friendly.`;
+
+// Helper function to build personalized user context
+const buildUserContext = async (userId) => {
+  if (!userId) return "";
+
+  try {
+    const user = await User.findById(userId).select('name');
+    const contextParts = [];
+
+    if (user) {
+      contextParts.push(`User Profile: ${user.name || 'User'}`);
+    }
+
+    // Fetch MBTI results - latest and historical
+    const mbtiResults = await MBTIResult.find({ userId })
+      .sort({ completedAt: -1 })
+      .limit(3)
+      .select('mbtiType dimensions completedAt')
+      .lean();
+
+    if (mbtiResults && mbtiResults.length > 0) {
+      const latest = mbtiResults[0];
+      const daysSinceTest = Math.floor((new Date() - new Date(latest.completedAt)) / (1000 * 60 * 60 * 24));
+      
+      const mbtiInfo = [
+        `\n\nMBTI Personality Type: ${latest.mbtiType}`,
+        `Most Recent Test: ${new Date(latest.completedAt).toLocaleDateString()} (${daysSinceTest} days ago)`,
+      ];
+      
+      if (latest.dimensions) {
+        mbtiInfo.push(`Dimensions: E/I: ${latest.dimensions.ei}, S/N: ${latest.dimensions.sn}, T/F: ${latest.dimensions.tf}, J/P: ${latest.dimensions.jp}`);
+      }
+
+      if (mbtiResults.length > 1) {
+        const types = mbtiResults.map(r => r.mbtiType);
+        const isConsistent = types.every(t => t === types[0]);
+        if (isConsistent) {
+          mbtiInfo.push(`Consistency: Same type across ${mbtiResults.length} tests (stable personality)`);
+        } else {
+          mbtiInfo.push(`Test History: ${types.join(' → ')} (personality evolution observed)`);
+        }
+      }
+      
+      contextParts.push(mbtiInfo.join('\n'));
+    }
+
+    // Fetch PERMA results - latest and historical
+    const permaResults = await PERMAResult.find({ userId })
+      .sort({ completedAt: -1 })
+      .limit(3)
+      .select('scores overallScore completedAt')
+      .lean();
+
+    if (permaResults && permaResults.length > 0) {
+      const latest = permaResults[0];
+      const daysSinceTest = Math.floor((new Date() - new Date(latest.completedAt)) / (1000 * 60 * 60 * 24));
+      
+      const permaInfo = [
+        `\n\nPERMA Well-being Assessment:`,
+        `Current Overall Score: ${latest.overallScore ? latest.overallScore.toFixed(2) : 'N/A'}`,
+        `Most Recent Test: ${new Date(latest.completedAt).toLocaleDateString()} (${daysSinceTest} days ago)`,
+      ];
+      
+      if (latest.scores) {
+        permaInfo.push(`Current Scores: P=${latest.scores.P?.toFixed(1) || 'N/A'}, E=${latest.scores.E?.toFixed(1) || 'N/A'}, R=${latest.scores.R?.toFixed(1) || 'N/A'}, M=${latest.scores.M?.toFixed(1) || 'N/A'}, A=${latest.scores.A?.toFixed(1) || 'N/A'}`);
+      }
+
+      if (permaResults.length > 1 && latest.overallScore && permaResults[1].overallScore) {
+        const scoreDiff = latest.overallScore - permaResults[1].overallScore;
+        const trend = scoreDiff > 0.5 ? 'Improving' : scoreDiff < -0.5 ? 'Declining' : 'Stable';
+        permaInfo.push(`Well-being Trend: ${trend} (${scoreDiff > 0 ? '+' : ''}${scoreDiff.toFixed(2)} from previous test)`);
+        
+        if (latest.scores && permaResults[1].scores) {
+          const changes = Object.keys(latest.scores).map(key => ({
+            dim: key,
+            change: (latest.scores[key] || 0) - (permaResults[1].scores[key] || 0)
+          })).sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+          
+          if (Math.abs(changes[0].change) > 1) {
+            permaInfo.push(`Biggest Change: ${changes[0].dim} (${changes[0].change > 0 ? '+' : ''}${changes[0].change.toFixed(1)})`);
+          }
+        }
+      }
+      
+      contextParts.push(permaInfo.join('\n'));
+    }
+
+    const iqResults = await IQResult.find({ userId })
+      .sort({ completedAt: -1 })
+      .limit(3)
+      .select('iqScore totalScore maxScore categoryBreakdown completedAt')
+      .lean();
+
+    if (iqResults && iqResults.length > 0) {
+      const latest = iqResults[0];
+      const daysSinceTest = Math.floor((new Date() - new Date(latest.completedAt)) / (1000 * 60 * 60 * 24));
+      
+      const iqInfo = [
+        `\n\n IQ Assessment:`,
+        `Current IQ Score: ${latest.iqScore || 'N/A'}`,
+        `Raw Score: ${latest.totalScore}/${latest.maxScore}`,
+        `Most Recent Test: ${new Date(latest.completedAt).toLocaleDateString()} (${daysSinceTest} days ago)`,
+      ];
+      
+      if (latest.categoryBreakdown) {
+        const categories = Object.entries(latest.categoryBreakdown)
+          .map(([cat, data]) => `${cat}: ${data.score}/${data.total}`)
+          .join(', ');
+        iqInfo.push(`Category Breakdown: ${categories}`);
+      }
+
+      if (iqResults.length > 1 && latest.iqScore && iqResults[1].iqScore) {
+        const scoreDiff = latest.iqScore - iqResults[1].iqScore;
+        const trend = scoreDiff > 5 ? 'Improving' : scoreDiff < -5 ? 'Declining' : 'Consistent';
+        iqInfo.push(`Performance Trend: ${trend} (${scoreDiff > 0 ? '+' : ''}${scoreDiff} from previous test)`);
+        
+        if (iqResults.length > 1) {
+          iqInfo.push(`Test History: ${iqResults.length} test${iqResults.length > 1 ? 's' : ''} completed`);
+        }
+      }
+      
+      contextParts.push(iqInfo.join('\n'));
+    }
+
+    if (contextParts.length > 1) {
+      return `\n\n=== USER'S PSYCHOLOGICAL PROFILE ===\n${contextParts.join('\n')}\n\n=== END OF PROFILE ===\n\nUse this information to provide personalized insights and advice tailored to the user's personality type, well-being scores, and cognitive profile. Reference their specific results naturally in your responses when relevant. Pay attention to trends and changes over time. If data is older than 90 days, acknowledge that their current state may have changed.`;
+    }
+
+    return "";
+  } catch (error) {
+    console.error('Error fetching user context:', error);
+    return "";
+  }
+};
 
 exports.sendMessage = async (req, res) => {
   try {
@@ -76,6 +214,8 @@ exports.sendMessage = async (req, res) => {
       content: message,
       timestamp: new Date(),
     });
+    const userContext = await buildUserContext(userId);
+    console.log("User Context Length:", userContext.length);
 
     const conversationHistory = conversation.messages
       .slice(-10)
@@ -89,14 +229,14 @@ exports.sendMessage = async (req, res) => {
         model: "gemini-2.5-flash",
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 500,
+          maxOutputTokens: 25000,
         },
       });
       const chat = model.startChat({
         history: [
           {
             role: "user",
-            parts: [{ text: SYSTEM_PROMPT }],
+            parts: [{ text: SYSTEM_PROMPT + userContext }],
           },
           {
             role: "model",
@@ -106,7 +246,6 @@ exports.sendMessage = async (req, res) => {
         ],
       });
 
-      // Send the current message
       const result = await chat.sendMessage(message);
       const aiResponse = result.response.text();
 
@@ -128,7 +267,11 @@ exports.sendMessage = async (req, res) => {
         },
       });
     } catch (aiError) {
-      console.error("AI Model Error:", aiError);
+      console.error("=== AI Model Error Details ===");
+      console.error("Error Message:", aiError.message);
+      console.error("Error Stack:", aiError.stack);
+      console.error("Error Details:", JSON.stringify(aiError, null, 2));
+      console.error("==============================");
 
       const fallbackResponse =
         "I apologize, but I'm experiencing some technical difficulties right now. While I sort this out, I'd love to help you explore your psychological profile! Have you taken our assessments yet? We offer MBTI personality tests, PERMA well-being assessments, and IQ evaluations - all great ways to start understanding your unique strengths and potential.";

@@ -379,6 +379,7 @@ exports.getAllActivityLogs = async (req, res) => {
     const UserModel = require("../models/UserModel");
     const MBTIResult = require("../models/MBTIResult");
     const PERMAResult = require("../models/PERMAResult");
+    const IQResult = require("../models/IQResult");
 
     let activityLogs = [];
 
@@ -473,6 +474,29 @@ exports.getAllActivityLogs = async (req, res) => {
           timestamp: result.completedAt || result.createdAt,
           ipAddress: "N/A",
           testResult: avgScore ? avgScore.toFixed(2) : "N/A",
+        });
+      });
+    }
+
+    // Fetch IQ test results
+    if (filter === "all" || filter === "test") {
+      const iqResults = await IQResult.find()
+        .populate("userId", "name email")
+        .sort({ completedAt: -1 })
+        .lean();
+
+      iqResults.forEach((result) => {
+        activityLogs.push({
+          id: result._id,
+          type: "iq_test",
+          action: "TEST_COMPLETED",
+          user: result.userId ? result.userId.name : "Unknown User",
+          email: result.userId ? result.userId.email : "N/A",
+          details: `Completed IQ Test - Score: ${result.totalScore || "N/A"}/${result.maxScore || "N/A"} (${result.iqScore || "N/A"} IQ)`,
+          resourceType: "IQ Test",
+          timestamp: result.completedAt || result.createdAt,
+          ipAddress: "N/A",
+          testResult: result.iqScore || "N/A",
         });
       });
     }
