@@ -19,22 +19,29 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// Google OAuth Strategy - only initialize if credentials are provided
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  // Determine the correct callback URL based on environment
   const getCallbackURL = () => {
+    if (process.env.GOOGLE_CALLBACK_URL) {
+      return process.env.GOOGLE_CALLBACK_URL;
+    }
     if (process.env.NODE_ENV === 'production' && process.env.PRODUCTION_URL) {
       return `${process.env.PRODUCTION_URL}/auth/google/callback`;
     }
-    return process.env.GOOGLE_REDIRECT_URI || 'https://euphoria-backend-v2-a2cafrgch8azaabh.centralindia-01.azurewebsites.net/auth/google/callback';
+    if (process.env.GOOGLE_REDIRECT_URI && !process.env.GOOGLE_REDIRECT_URI.includes('localhost')) {
+      return process.env.GOOGLE_REDIRECT_URI;
+    }
+    return 'https://euphoria-backend-v2-a2cafrgch8azaabh.centralindia-01.azurewebsites.net/auth/google/callback';
   };
+
+  const callbackURL = getCallbackURL();
+  console.log('Google OAuth Callback URL:', callbackURL);
 
   passport.use(
     new GoogleStrategy(
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: getCallbackURL(),
+        callbackURL: callbackURL,
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -42,7 +49,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           let user = await UserModel.findOne({
             $or: [
               { googleId: profile.id },
-              { auth0Id: profile.id }, // Legacy field support
+              { auth0Id: profile.id }, 
               { email: profile.emails[0].value },
             ],
           });
