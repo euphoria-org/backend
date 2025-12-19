@@ -21,12 +21,20 @@ passport.deserializeUser(async (id, done) => {
 
 // Google OAuth Strategy - only initialize if credentials are provided
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  // Determine the correct callback URL based on environment
+  const getCallbackURL = () => {
+    if (process.env.NODE_ENV === 'production' && process.env.PRODUCTION_URL) {
+      return `${process.env.PRODUCTION_URL}/auth/google/callback`;
+    }
+    return process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8080/auth/google/callback';
+  };
+
   passport.use(
     new GoogleStrategy(
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: process.env.GOOGLE_REDIRECT_URI,
+        callbackURL: getCallbackURL(),
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
