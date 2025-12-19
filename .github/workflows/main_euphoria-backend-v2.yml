@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - EuphoriaBackend
+name: Build and deploy Node.js app to Azure Web App - euphoria-backend-v2
 
 on:
   push:
@@ -51,15 +51,15 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_307C16542F4B4558A666C36EC5DE91B5 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_E7B3A7563BDE4EEBBFC374004AC27350 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_896A68F7F9E040E0AA34136F25ED650E }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_735C9D0CEBD6435B9DB42489DE2E5F17 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_FCC65CF9354D4D1BBB7FCA77DB32A6E3 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_A5EB109C92FE4D3B884A78E2513014EE }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'EuphoriaBackend'
+          app-name: 'euphoria-backend-v2'
           slot-name: 'Production'
           package: .
           
