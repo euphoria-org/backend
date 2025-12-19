@@ -26,7 +26,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     if (process.env.NODE_ENV === 'production' && process.env.PRODUCTION_URL) {
       return `${process.env.PRODUCTION_URL}/auth/google/callback`;
     }
-    return process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8080/auth/google/callback';
+    return process.env.GOOGLE_REDIRECT_URI || 'https://euphoria-backend-v2-a2cafrgch8azaabh.centralindia-01.azurewebsites.net/auth/google/callback';
   };
 
   passport.use(
