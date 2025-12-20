@@ -14,6 +14,7 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5175",
   "https://delightful-bay-07530dc00.4.azurestaticapps.net",
+  "https://wonderful-wave-0b94bee00.2.azurestaticapps.net",
 ];
 
 if (process.env.FRONTEND_URL) {
